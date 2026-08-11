@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#0f1115" />
+<title>桌面助手 v3</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1f242d; --text:#f5f7fa;
+  --muted:#9aa4b2; --line:#2a313c; --accent:#7da2ff; --good:#72d7aa;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden}
+body{padding:0}
+button,input{font:inherit}
+
+/* 
+  小米 12X 全屏时四角为物理圆角。
+  除系统 safe-area 外，额外保留固定“圆角安全区”，避免文字被裁掉。
+*/
+.safe-shell{
+  width:100%;
+  height:100dvh;
+  padding:
+    max(env(safe-area-inset-top, 0px), 12px)
+    max(env(safe-area-inset-right, 0px), 22px)
+    max(env(safe-area-inset-bottom, 0px), 12px)
+    max(env(safe-area-inset-left, 0px), 22px);
+  overflow:hidden;
+}
+.app{
+  width:100%; height:100%;
+  display:grid; grid-template-rows:auto 1fr auto; gap:8px; overflow:hidden;
+}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:0}
+.clock{font-weight:780;line-height:.9;letter-spacing:-1.5px;font-size:clamp(34px,8vh,64px)}
+.date{margin-top:5px;color:var(--muted);font-size:clamp(12px,2.2vh,17px)}
+.weather{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:9px 12px;min-width:130px;text-align:right
+}
+.weather .title,.title{color:var(--muted);font-size:clamp(11px,1.9vh,14px)}
+.weather .temp{font-size:clamp(21px,4.2vh,30px);font-weight:750;line-height:1}
+.weather .sub{color:var(--muted);font-size:10px;margin-top:4px}
+
+.grid{
+  min-height:0;display:grid;gap:8px;
+  grid-template-columns:1.25fr 1fr 1fr;
+}
+.card{
+  min-width:0;min-height:0;overflow:hidden;background:var(--panel);
+  border:1px solid var(--line);border-radius:16px;padding:12px
+}
+.hero{
+  margin-top:6px;font-weight:700;line-height:1.2;
+  font-size:clamp(18px,3.6vh,30px);
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden
+}
+.taskInput{
+  width:100%;margin-top:10px;background:var(--panel2);color:var(--text);
+  border:1px solid var(--line);border-radius:10px;padding:8px 9px;outline:none;
+  font-size:clamp(11px,1.9vh,14px)
+}
+.bigNumber{font-size:clamp(28px,6vh,52px);font-weight:780;line-height:1;margin-top:8px}
+.progress{height:6px;background:var(--panel2);border-radius:999px;overflow:hidden;margin:10px 0}
+.bar{height:100%;width:0;background:var(--accent)}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.btn{
+  border:0;border-radius:10px;padding:7px 10px;background:var(--panel2);
+  color:var(--text);font-size:clamp(11px,1.8vh,13px)
+}
+.btn.primary{background:var(--accent);color:#07101f;font-weight:700}
+.muted{color:var(--muted);font-size:clamp(10px,1.7vh,12px)}
+.countdown{font-size:clamp(24px,5vh,42px);font-weight:770;line-height:1;margin-top:8px}
+.settings{display:flex;gap:6px;align-items:center;margin-top:10px}
+.timeInput{
+  width:78px;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  border-radius:9px;padding:5px 6px;font-size:12px
+}
+.market{display:grid;gap:4px;margin-top:5px}
+.marketItem{
+  display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);
+  font-size:clamp(10px,1.8vh,12px)
+}
+.marketItem:last-child{border-bottom:none}
+.footer{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  color:var(--muted);font-size:10px;min-height:0
+}
+
+/* 小米 12X 一类细长竖屏：全部压进一屏 */
+@media (orientation:portrait){
+  .safe-shell{
+    padding:
+      max(env(safe-area-inset-top, 0px), 18px)
+      max(env(safe-area-inset-right, 0px), 14px)
+      max(env(safe-area-inset-bottom, 0px), 18px)
+      max(env(safe-area-inset-left, 0px), 14px);
+  }
+  .app{gap:7px}
+  .top{align-items:flex-start}
+  .clock{font-size:clamp(38px,7.5vh,58px)}
+  .weather{min-width:118px;padding:8px 10px}
+  .grid{
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:1.15fr .95fr;
+    gap:7px
+  }
+  .card{padding:10px;border-radius:14px}
+  .card:first-child{grid-column:1 / -1}
+  .hero{font-size:clamp(18px,3.2vh,25px);-webkit-line-clamp:2}
+  .bigNumber{font-size:clamp(28px,5.2vh,42px)}
+  .countdown{font-size:clamp(22px,4.4vh,36px)}
+}
+
+/* 横屏：关键修正。字体按“高度”缩放，不再按屏幕宽度放大 */
+@media (orientation:landscape){
+  .safe-shell{
+    padding:
+      max(env(safe-area-inset-top, 0px), 10px)
+      max(env(safe-area-inset-right, 0px), 30px)
+      max(env(safe-area-inset-bottom, 0px), 10px)
+      max(env(safe-area-inset-left, 0px), 30px);
+  }
+  .app{gap:6px}
+  .top{min-height:56px}
+  .clock{font-size:clamp(30px,10vh,52px)}
+  .date{font-size:clamp(10px,3vh,14px);margin-top:3px}
+  .weather{padding:7px 10px;min-width:125px;border-radius:13px}
+  .weather .temp{font-size:clamp(19px,5vh,26px)}
+  .grid{gap:6px}
+  .card{padding:9px;border-radius:13px}
+  .title{font-size:clamp(9px,2.8vh,12px)}
+  .hero{font-size:clamp(15px,5vh,23px);margin-top:4px;-webkit-line-clamp:2}
+  .taskInput{margin-top:7px;padding:6px 7px;font-size:clamp(9px,2.5vh,12px)}
+  .bigNumber{font-size:clamp(24px,8vh,42px);margin-top:5px}
+  .progress{margin:7px 0;height:5px}
+  .btn{padding:5px 8px;font-size:clamp(9px,2.5vh,11px)}
+  .muted{font-size:clamp(8px,2.3vh,10px)}
+  .countdown{font-size:clamp(21px,7vh,36px);margin-top:5px}
+  .settings{margin-top:7px}
+  .timeInput{padding:4px 5px;font-size:10px}
+  .marketItem{padding:4px 0;font-size:clamp(8px,2.3vh,10px)}
+  .footer{font-size:9px}
+}
+
+/* 很矮的横屏（浏览器地址栏占空间时）进一步压缩 */
+@media (orientation:landscape) and (max-height:420px){
+  .top{min-height:48px}
+  .weather .sub{display:none}
+  .card{padding:7px}
+  .taskInput{margin-top:5px}
+  .progress{margin:5px 0}
+  .marketItem{padding:3px 0}
+  .footer{height:27px}
+}
+</style>
+</head>
+<body>
+<div class="safe-shell">
+<div class="app">
+  <header class="top">
+    <div>
+      <div id="clock" class="clock">--:--</div>
+      <div id="date" class="date">----</div>
+    </div>
+    <div class="weather" onclick="alert('实时天气会在下一版接入。')">
+      <div class="title">天气</div>
+      <div class="temp">--°C</div>
+      <div class="sub">下一版接入实时天气</div>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <div class="title">今天最重要的事</div>
+      <div id="taskDisplay" class="hero">先完成最重要的一件事</div>
+      <input id="taskInput" class="taskInput" placeholder="点击这里修改今日重点…" />
+    </section>
+
+    <section class="card">
+      <div class="title">专注计时 · 45 分钟</div>
+      <div id="timer" class="bigNumber">45:00</div>
+      <div class="progress"><div id="bar" class="bar"></div></div>
+      <div class="row">
+        <button id="startBtn" class="btn primary">开始</button>
+        <button id="resetBtn" class="btn">重置</button>
+      </div>
+      <div id="focusCount" class="muted" style="margin-top:7px">今日完成 0 个专注周期</div>
+    </section>
+
+    <section class="card">
+      <div class="title">距离下班</div>
+      <div id="countdown" class="countdown">--:--:--</div>
+      <div class="settings">
+        <span class="muted">下班</span>
+        <input id="endTime" class="timeInput" type="time" value="18:00" />
+      </div>
+      <div class="title" style="margin-top:10px">市场 · 下一版</div>
+      <div class="market">
+        <div class="marketItem"><span>沪深300</span><span class="muted">--</span></div>
+        <div class="marketItem"><span>纳斯达克100</span><span class="muted">--</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>桌面助手 v3 · 小米 12X 圆角适配版</span>
+    <div class="row">
+      <button id="fullscreenBtn" class="btn">全屏</button>
+      <button id="wakeBtn" class="btn">保持亮屏</button>
+    </div>
+  </footer>
+</div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+
+function updateClock(){
+  const d=new Date();
+  $('#clock').textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const w=['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][d.getDay()];
+  $('#date').textContent=`${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 · ${w}`;
+}
+updateClock(); setInterval(updateClock,1000);
+
+const ti=$('#taskInput'), td=$('#taskDisplay');
+const saved=localStorage.getItem('desk_task')||'先完成最重要的一件事';
+ti.value=saved; td.textContent=saved;
+ti.addEventListener('input',()=>{
+  const v=ti.value.trim()||'先完成最重要的一件事';
+  td.textContent=v; localStorage.setItem('desk_task',v);
+});
+
+let total=45*60,left=total,timerId=null,running=false;
+let focusCount=Number(localStorage.getItem('focus_count')||0);
+const todayKey=new Date().toDateString();
+if(localStorage.getItem('focus_date')!==todayKey){
+  focusCount=0;localStorage.setItem('focus_count','0');localStorage.setItem('focus_date',todayKey);
+}
+function renderTimer(){
+  $('#timer').textContent=`${pad(Math.floor(left/60))}:${pad(left%60)}`;
+  $('#bar').style.width=`${(1-left/total)*100}%`;
+  $('#focusCount').textContent=`今日完成 ${focusCount} 个专注周期`;
+}
+renderTimer();
+
+$('#startBtn').onclick=()=>{
+  if(running){
+    clearInterval(timerId);running=false;$('#startBtn').textContent='继续';return;
+  }
+  running=true;$('#startBtn').textContent='暂停';
+  timerId=setInterval(()=>{
+    left--;
+    if(left<=0){
+      clearInterval(timerId);running=false;focusCount++;
+      localStorage.setItem('focus_count',String(focusCount));
+      alert('一个专注周期完成。');
+      left=total;$('#startBtn').textContent='开始';
+    }
+    renderTimer();
+  },1000);
+};
+$('#resetBtn').onclick=()=>{
+  clearInterval(timerId);running=false;left=total;$('#startBtn').textContent='开始';renderTimer();
+};
+
+const endInput=$('#endTime');
+endInput.value=localStorage.getItem('end_time')||'18:00';
+endInput.onchange=()=>localStorage.setItem('end_time',endInput.value);
+
+function updateCountdown(){
+  const now=new Date();
+  const [h,m]=endInput.value.split(':').map(Number);
+  const end=new Date(now);end.setHours(h,m,0,0);
+  const diff=end-now;
+  if(diff<=0){$('#countdown').textContent='今天辛苦了';return;}
+  const s=Math.floor(diff/1000);
+  $('#countdown').textContent=`${pad(Math.floor(s/3600))}:${pad(Math.floor((s%3600)/60))}:${pad(s%60)}`;
+}
+updateCountdown();setInterval(updateCountdown,1000);
+
+$('#fullscreenBtn').onclick=async()=>{
+  try{
+    if(!document.fullscreenElement) await document.documentElement.requestFullscreen();
+    else await document.exitFullscreen();
+  }catch(e){alert('如果浏览器不允许网页全屏，后续做成 PWA 后可直接全屏运行。');}
+};
+
+let wakeLock=null;
+
+async function requestWakeLock(){
+  // Screen Wake Lock API 通常要求 HTTPS 安全上下文。
+  // 直接打开下载到手机里的 file:// HTML 时，浏览器往往会拒绝。
+  if(location.protocol === 'file:'){
+    alert('当前是直接打开手机里的本地 HTML 文件。浏览器出于安全限制，通常不会允许这种页面申请“保持亮屏”。\n\n这不是你手机设置错了。等我们把桌面助手部署到 HTTPS 网页/PWA 后，这个按钮才适合正式启用。\n\n现阶段可先把小米 12X 的“自动锁屏”时间调长。');
+    return;
+  }
+  if(!window.isSecureContext){
+    alert('当前页面不是 HTTPS 安全页面，因此不能申请保持亮屏。');
+    return;
+  }
+  if(!('wakeLock' in navigator)){
+    alert('当前浏览器不支持 Screen Wake Lock。可以换最新版 Chrome 后再试。');
+    return;
+  }
+  try{
+    wakeLock=await navigator.wakeLock.request('screen');
+    $('#wakeBtn').textContent='已保持亮屏';
+    wakeLock.addEventListener('release',()=>$('#wakeBtn').textContent='保持亮屏');
+  }catch(e){
+    alert('浏览器没有授予保持亮屏权限。原因可能是省电模式、电量过低或浏览器策略。');
+  }
+}
+
+$('#wakeBtn').onclick=requestWakeLock;
+
+// 页面从后台重新回到前台时，Wake Lock 可能已被浏览器释放，自动重新申请。
+document.addEventListener('visibilitychange', async ()=>{
+  if(document.visibilityState==='visible' && wakeLock && window.isSecureContext){
+    try{
+      wakeLock=await navigator.wakeLock.request('screen');
+      $('#wakeBtn').textContent='已保持亮屏';
+    }catch(e){}
+  }
+});
+</script>
+</body>
+</html>
